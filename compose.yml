@@ -1,0 +1,45 @@
+services:
+  registry-ui:
+    image: joxit/docker-registry-ui:main
+    restart: always
+    ports:
+      - 80:80
+    environment:
+      - SINGLE_REGISTRY=true                     # Use single registry mode
+      - REGISTRY_TITLE=Docker Registry UI        # UI Title
+      - DELETE_IMAGES=true                       # Enable image deletion
+      - SHOW_CONTENT_DIGEST=true                 # Show image content digest
+      - NGINX_PROXY_PASS_URL=http://ip of server or dns:5000  # URL of the registry server
+      - SHOW_CATALOG_NB_TAGS=true                # Show number of tags in the catalog
+      - CATALOG_MIN_BRANCHES=1                   # Min branches to display in the catalog
+      - CATALOG_MAX_BRANCHES=1                   # Max branches to display in the catalog
+      - TAGLIST_PAGE_SIZE=100                    # Number of tags to display per page
+      - REGISTRY_SECURED=true                    # Authentication is enabled
+      - REGISTRY_AUTH=basic                      # Basic authentication mode
+      - REGISTRY_AUTH_USERNAME=admin             # Username for authentication
+      - REGISTRY_AUTH_PASSWORD=admin             # Password for authentication
+      - CATALOG_ELEMENTS_LIMIT=1000              # Limit number of catalog elements
+    container_name: registry-ui
+    depends_on:
+      - registry-server                          # Ensure registry-server starts first
+
+  registry-server:
+    image: registry:2.8.2
+    restart: always
+    ports:
+      - 5000:5000                                    # Expose registry on port 5000
+    environment:
+      REGISTRY_AUTH: htpasswd                        # Enable htpasswd authentication
+      REGISTRY_AUTH_HTPASSWD_REALM: "Registry Realm"   # Authentication realm
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd      # Path to the htpasswd file
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Origin: '[http://localhost]'    # Replace with your actual host if needed
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Methods: '[HEAD,GET,OPTIONS,DELETE]'
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Credentials: '[true]'
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Headers: '[Authorization,Accept,Cache-Control]'
+      REGISTRY_HTTP_HEADERS_Access-Control-Expose-Headers: '[Docker-Content-Digest]'
+      REGISTRY_STORAGE_DELETE_ENABLED: 'true'     # Enable image deletion
+    volumes:
+      - ./registry/data:/var/lib/registry         # Map data to local directory
+      - ./registry/auth:/auth                     # Map the htpasswd file directory
+    container_name: registry-server
+
